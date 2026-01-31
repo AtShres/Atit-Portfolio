@@ -15,37 +15,49 @@ function openSlider(imgs, title, description) {
 
 function updateSlider() {
     const container = document.getElementById('media-container');
-    const dotContainer = document.getElementById('dot-container');
-    const file = currentImages[currentIndex];
+    const isMobile = window.innerWidth <= 768;
     
-    // Clear the container
     container.innerHTML = '';
 
-    // Check for video or image
-    if (file.toLowerCase().endsWith('.mp4')) {
-        const video = document.createElement('video');
-        video.src = file;
-        video.controls = true;
-        video.autoplay = true;
-        container.appendChild(video);
+    if (isMobile) {
+        // MOBILE: Load all images at once so user can scroll
+        currentImages.forEach(file => {
+            const element = file.toLowerCase().endsWith('.mp4') 
+                ? document.createElement('video') 
+                : document.createElement('img');
+            
+            element.src = file;
+            if (file.toLowerCase().endsWith('.mp4')) {
+                element.controls = true;
+                element.muted = true;
+                element.loop = true;
+            }
+            container.appendChild(element);
+        });
     } else {
-        const img = document.createElement('img');
-        img.src = file;
-        img.id = "lightbox-img";
-        container.appendChild(img);
+        // DESKTOP: Keep existing single-slide logic
+        const file = currentImages[currentIndex];
+        const element = file.toLowerCase().endsWith('.mp4') 
+            ? document.createElement('video') 
+            : document.createElement('img');
+        
+        element.src = file;
+        if (file.toLowerCase().endsWith('.mp4')) {
+            element.controls = true;
+            element.autoplay = true;
+        }
+        container.appendChild(element);
+        
+        // Update Dots (only for desktop)
+        const dotContainer = document.getElementById('dot-container');
+        dotContainer.innerHTML = '';
+        currentImages.forEach((_, index) => {
+            const dot = document.createElement('div');
+            dot.className = `dot ${index === currentIndex ? 'active' : ''}`;
+            dot.onclick = () => { currentIndex = index; updateSlider(); };
+            dotContainer.appendChild(dot);
+        });
     }
-
-    // Update Dots
-    dotContainer.innerHTML = '';
-    currentImages.forEach((_, index) => {
-        const dot = document.createElement('div');
-        dot.className = 'dot';
-        dot.style.width = '8px';
-        dot.style.height = '8px';
-        dot.style.borderRadius = '50%';
-        dot.style.background = (index === currentIndex) ? 'var(--accent)' : '#444';
-        dotContainer.appendChild(dot);
-    });
 }
 
 function closeLightbox() {
