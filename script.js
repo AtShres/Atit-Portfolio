@@ -1,4 +1,5 @@
 /* --- LIGHTBOX & SLIDER LOGIC --- */
+/* --- LIGHTBOX & SLIDER LOGIC --- */
 let currentImages = [];
 let currentIndex = 0;
 
@@ -6,7 +7,8 @@ function openSlider(imgs, title, description) {
     currentImages = imgs;
     currentIndex = 0;
     document.getElementById('side-title').innerText = title;
-    document.getElementById('side-desc').innerText = description;
+    // Format description with line breaks
+    document.getElementById('side-desc').innerHTML = description.replace(/\n/g, '<br>');
     updateSlider();
     document.getElementById('lightbox').style.display = 'block';
     setTimeout(() => document.getElementById('lightbox').classList.add('active'), 10);
@@ -15,49 +17,35 @@ function openSlider(imgs, title, description) {
 
 function updateSlider() {
     const container = document.getElementById('media-container');
-    const isMobile = window.innerWidth <= 768;
-    
     container.innerHTML = '';
 
-    if (isMobile) {
-        // MOBILE: Load all images at once so user can scroll
-        currentImages.forEach(file => {
-            const element = file.toLowerCase().endsWith('.mp4') 
-                ? document.createElement('video') 
-                : document.createElement('img');
-            
-            element.src = file;
-            if (file.toLowerCase().endsWith('.mp4')) {
-                element.controls = true;
-                element.muted = true;
-                element.loop = true;
-            }
-            container.appendChild(element);
-        });
-    } else {
-        // DESKTOP: Keep existing single-slide logic
-        const file = currentImages[currentIndex];
-        const element = file.toLowerCase().endsWith('.mp4') 
-            ? document.createElement('video') 
-            : document.createElement('img');
-        
-        element.src = file;
-        if (file.toLowerCase().endsWith('.mp4')) {
-            element.controls = true;
-            element.autoplay = true;
-        }
-        container.appendChild(element);
-        
-        // Update Dots (only for desktop)
-        const dotContainer = document.getElementById('dot-container');
-        dotContainer.innerHTML = '';
-        currentImages.forEach((_, index) => {
-            const dot = document.createElement('div');
-            dot.className = `dot ${index === currentIndex ? 'active' : ''}`;
-            dot.onclick = () => { currentIndex = index; updateSlider(); };
-            dotContainer.appendChild(dot);
-        });
+    const file = currentImages[currentIndex];
+    const isVideo = file.toLowerCase().endsWith('.mp4');
+    const element = isVideo ? document.createElement('video') : document.createElement('img');
+    
+    element.src = file;
+    if (isVideo) {
+        element.controls = true;
+        element.autoplay = true;
+        element.muted = true; // Required for autoplay
+        element.loop = true;
+        element.playsInline = true;
     }
+    container.appendChild(element);
+    
+    // Update Dots (Now active for both Mobile and Desktop)
+    const dotContainer = document.getElementById('dot-container');
+    dotContainer.innerHTML = '';
+    currentImages.forEach((_, index) => {
+        const dot = document.createElement('div');
+        dot.className = `dot ${index === currentIndex ? 'active' : ''}`;
+        dot.onclick = (e) => { 
+            e.stopPropagation();
+            currentIndex = index; 
+            updateSlider(); 
+        };
+        dotContainer.appendChild(dot);
+    });
 }
 
 function closeLightbox() {
