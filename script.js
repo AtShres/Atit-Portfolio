@@ -3,6 +3,16 @@
 let currentImages = [];
 let currentIndex = 0;
 
+/* --- MOBILE NAV LOGIC --- */
+function setNavOpen(isOpen) {
+    document.body.classList.toggle('nav-open', isOpen);
+    const btn = document.querySelector('.nav-toggle');
+    if (btn) {
+        btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        btn.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
+    }
+}
+
 function openSlider(imgs, title, description) {
     currentImages = imgs;
     currentIndex = 0;
@@ -110,6 +120,142 @@ function scrollToWork() {
     const workSection = document.getElementById('work');
     workSection.scrollIntoView({ behavior: 'smooth' });
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const navToggle = document.querySelector('.nav-toggle');
+    const navLinks = document.querySelector('.nav-links');
+
+    if (navToggle && navLinks) {
+        navToggle.addEventListener('click', () => {
+            const isOpen = document.body.classList.contains('nav-open');
+            setNavOpen(!isOpen);
+        });
+
+        // Close after choosing a section
+        navLinks.querySelectorAll('a[href^="#"]').forEach(a => {
+            a.addEventListener('click', () => setNavOpen(false));
+        });
+
+        // Close on escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') setNavOpen(false);
+        });
+    }
+
+    // If resizing up to desktop, ensure menu isn't stuck open
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 1024) setNavOpen(false);
+    });
+
+    /* --- LIGHTBOX SWIPE (MOBILE) --- */
+    const viewer = document.querySelector('.lightbox-viewer');
+    if (viewer) {
+        let startX = 0;
+        let startY = 0;
+        let dragging = false;
+        let lockedAxis = null; // 'x' | 'y' | null
+        let activeEl = null;
+
+        const minSwipe = 50; // px before slide change
+
+        const getActiveMedia = () => {
+            const container = document.getElementById('media-container');
+            return container ? container.querySelector('img, video') : null;
+        };
+
+        const setTranslate = (px, withTransition) => {
+            const el = activeEl || getActiveMedia();
+            if (!el) return;
+            activeEl = el;
+            el.classList.toggle('swipe-transition', !!withTransition);
+            el.style.transform = `translateX(${px}px)`;
+        };
+
+        const resetTranslate = () => {
+            if (!activeEl) return;
+            activeEl.classList.add('swipe-transition');
+            activeEl.style.transform = 'translateX(0px)';
+            const el = activeEl;
+            setTimeout(() => {
+                el.classList.remove('swipe-transition');
+                el.style.transform = '';
+            }, 220);
+        };
+
+        viewer.addEventListener('touchstart', (e) => {
+            if (!e.touches || e.touches.length !== 1) return;
+            if (currentImages.length <= 1) return;
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            dragging = true;
+            lockedAxis = null;
+            activeEl = getActiveMedia();
+            if (activeEl) activeEl.classList.remove('swipe-transition');
+        }, { passive: true });
+
+        viewer.addEventListener('touchmove', (e) => {
+            if (!dragging || !e.touches || e.touches.length !== 1) return;
+            const x = e.touches[0].clientX;
+            const y = e.touches[0].clientY;
+            const dx = x - startX;
+            const dy = y - startY;
+
+            if (!lockedAxis) {
+                if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+                lockedAxis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+            }
+
+            if (lockedAxis === 'x') {
+                e.preventDefault();
+                const resistance = 0.85;
+                setTranslate(dx * resistance, false);
+            }
+        }, { passive: false });
+
+        viewer.addEventListener('touchend', (e) => {
+            if (!dragging) return;
+            dragging = false;
+            if (!e.changedTouches || e.changedTouches.length !== 1) {
+                resetTranslate();
+                return;
+            }
+
+            const endX = e.changedTouches[0].clientX;
+            const endY = e.changedTouches[0].clientY;
+            const dx = endX - startX;
+            const dy = endY - startY;
+
+            if (lockedAxis !== 'x' || Math.abs(dx) < Math.abs(dy) * 1.2) {
+                resetTranslate();
+                return;
+            }
+
+            if (Math.abs(dx) >= minSwipe) {
+                const direction = dx < 0 ? 1 : -1;
+                const offscreen = (dx < 0 ? -1 : 1) * Math.max(window.innerWidth, 420);
+                setTranslate(offscreen, true);
+                setTimeout(() => {
+                    changeSlide(direction);
+                    activeEl = getActiveMedia();
+                    if (!activeEl) return;
+                    const from = (direction === 1 ? 1 : -1) * Math.max(window.innerWidth, 420);
+                    activeEl.classList.remove('swipe-transition');
+                    activeEl.style.transform = `translateX(${from}px)`;
+                    requestAnimationFrame(() => {
+                        activeEl.classList.add('swipe-transition');
+                        activeEl.style.transform = 'translateX(0px)';
+                        setTimeout(() => {
+                            activeEl.classList.remove('swipe-transition');
+                            activeEl.style.transform = '';
+                        }, 220);
+                    });
+                }, 190);
+            } else {
+                resetTranslate();
+            }
+        }, { passive: true });
+    }
+});
 
 // Optional: Hide arrow when user scrolls down
 window.addEventListener('scroll', () => {

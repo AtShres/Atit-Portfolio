@@ -13,7 +13,7 @@
 
     <div id="canvas-container"></div>
 
-        <nav>
+        <nav class="site-nav" aria-label="Primary">
             <div class="logo-group">
                 <div class="product-item">
                     <a href="https://www.youtube.com/@BhunteTunes" target="_blank" class="logo-link">
@@ -32,7 +32,13 @@
 
             <div class="nav-spacer"></div>
 
-            <div class="nav-links">
+            <button class="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="primary-nav">
+                <span class="nav-toggle-bar"></span>
+                <span class="nav-toggle-bar"></span>
+                <span class="nav-toggle-bar"></span>
+            </button>
+
+            <div class="nav-links" id="primary-nav">
                 <a href="#work">Showreel</a>
                 <a href="#gallery">Archive</a>
                 <a href="#pipeline">Pipeline</a>
